@@ -1,0 +1,25 @@
+services:
+  immich-share:
+    build: .
+    container_name: immich-share
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8099:8000"   # only on loopback; access via Tailscale
+    volumes:
+      - immich-share-data:/data
+    environment:
+      IMMICH_URL:     ${IMMICH_URL}
+      IMMICH_API_KEY: ${IMMICH_API_KEY}
+      B2_ENDPOINT:    ${B2_ENDPOINT}
+      B2_KEY_ID:      ${B2_KEY_ID}
+      B2_APP_KEY:     ${B2_APP_KEY}
+      B2_BUCKET:      ${B2_BUCKET}
+    # If Immich runs in Docker on the same host, add it to its network:
+    # networks:
+    #   - immich_default
+    # networks:
+    #   immich_default:
+    #     external: true
+
+volumes:
+  immich-share-data:

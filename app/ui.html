@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Share Album</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── reset & tokens ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0d0d0f;
+  --surface:   #17171a;
+  --surface2:  #1f1f24;
+  --border:    #2a2a30;
+  --accent:    #e8ff6e;
+  --accent-dk: #b8cc48;
+  --text:      #f0f0f2;
+  --muted:     #6b6b78;
+  --danger:    #ff6b6b;
+  --radius:    12px;
+  --font:      'DM Sans', system-ui, sans-serif;
+  --mono:      'DM Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  min-height: 100dvh;
+  padding-bottom: 2rem;
+}
+
+/* ── header ── */
+header {
+  padding: 1.4rem 1.2rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.logo {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.logo svg { width: 18px; height: 18px; }
+header h1 {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+header span {
+  font-size: .75rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* ── main layout ── */
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.2rem;
+}
+
+/* ── section labels ── */
+.label {
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .75rem;
+}
+
+/* ── album grid ── */
+#album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 360px) {
+  #album-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.album-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .15s, transform .1s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.album-card:active { transform: scale(.97); }
+.album-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(232,255,110,.12);
+}
+.album-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--surface2);
+  display: block;
+}
+.album-thumb-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--surface2);
+  display: grid;
+  place-items: center;
+}
+.album-thumb-placeholder svg {
+  opacity: .25;
+  width: 28px; height: 28px;
+}
+.album-info {
+  padding: .5rem .6rem .55rem;
+}
+.album-name {
+  font-size: .78rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.album-count {
+  font-size: .68rem;
+  color: var(--muted);
+  margin-top: .15rem;
+}
+
+/* ── expiry picker ── */
+#options-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1.2rem;
+}
+.options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.options-row label {
+  font-size: .88rem;
+  color: var(--text);
+  font-weight: 500;
+}
+.options-row .hint {
+  font-size: .75rem;
+  color: var(--muted);
+  margin-top: .2rem;
+}
+.days-control {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.days-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: grid; place-items: center;
+  transition: background .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.days-btn:active { background: var(--border); }
+#days-value {
+  font-family: var(--mono);
+  font-size: .95rem;
+  font-weight: 500;
+  min-width: 2.4rem;
+  text-align: center;
+}
+
+/* ── publish button ── */
+#publish-btn {
+  width: 100%;
+  padding: .85rem;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--accent);
+  color: #0d0d0f;
+  font-family: var(--font);
+  font-size: .95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, opacity .15s, transform .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+#publish-btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+#publish-btn:not(:disabled):active {
+  transform: scale(.98);
+  background: var(--accent-dk);
+}
+
+/* ── progress ── */
+#progress {
+  margin-top: 1.2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: none;
+}
+.progress-label {
+  font-size: .82rem;
+  color: var(--muted);
+  margin-bottom: .6rem;
+}
+.progress-bar-wrap {
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 99px;
+  width: 0%;
+  transition: width .3s ease;
+}
+
+/* ── result ── */
+#result {
+  margin-top: 1.2rem;
+  display: none;
+}
+.result-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+.result-box .result-title {
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: .6rem;
+}
+.url-row {
+  display: flex;
+  gap: .5rem;
+  align-items: stretch;
+}
+#result-url {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .55rem .7rem;
+  font-family: var(--mono);
+  font-size: .7rem;
+  color: var(--muted);
+  word-break: break-all;
+  line-height: 1.4;
+}
+#copy-btn {
+  flex-shrink: 0;
+  padding: .55rem .9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: .82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .1s;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+#copy-btn.copied {
+  background: rgba(232,255,110,.15);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.result-meta {
+  font-size: .75rem;
+  color: var(--muted);
+  margin-top: .6rem;
+}
+
+/* ── error ── */
+#error-box {
+  margin-top: 1.2rem;
+  background: rgba(255,107,107,.08);
+  border: 1px solid rgba(255,107,107,.25);
+  border-radius: var(--radius);
+  padding: .9rem 1rem;
+  font-size: .85rem;
+  color: var(--danger);
+  display: none;
+}
+
+/* ── loading skeleton ── */
+.skeleton {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.skeleton-img {
+  width: 100%;
+  aspect-ratio: 1;
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+.skeleton-text {
+  height: 8px;
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px;
+  margin: .5rem .6rem .3rem;
+  width: 70%;
+}
+.skeleton-text.short { width: 40%; margin-top: 0; margin-bottom: .55rem; }
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2" width="7" height="7" rx="1.5" fill="#0d0d0f"/>
+      <rect x="11" y="2" width="7" height="7" rx="1.5" fill="#0d0d0f"/>
+      <rect x="2" y="11" width="7" height="7" rx="1.5" fill="#0d0d0f"/>
+      <circle cx="14.5" cy="14.5" r="3.5" fill="#0d0d0f"/>
+    </svg>
+  </div>
+  <div>
+    <h1>Share Album <span>via Immich → B2</span></h1>
+  </div>
+</header>
+
+<main>
+  <div class="label" style="margin-top:1rem">Select an album</div>
+  <div id="album-grid">
+    <!-- skeletons -->
+    <div class="skeleton"><div class="skeleton-img"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
+    <div class="skeleton"><div class="skeleton-img"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
+    <div class="skeleton"><div class="skeleton-img"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
+    <div class="skeleton"><div class="skeleton-img"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
+  </div>
+
+  <div id="options-panel">
+    <div class="options-row">
+      <div>
+        <div style="font-size:.88rem;font-weight:500">Link expiry</div>
+        <div class="hint">Link stops working after this many days</div>
+      </div>
+      <div class="days-control">
+        <button class="days-btn" id="days-minus" onclick="changeDays(-1)">−</button>
+        <span id="days-value">7 d</span>
+        <button class="days-btn" id="days-plus" onclick="changeDays(1)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="publish-btn" onclick="publish()" disabled>
+    Select an album to publish
+  </button>
+
+  <div id="progress">
+    <div class="progress-label" id="progress-label">Uploading…</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-bar"></div>
+    </div>
+  </div>
+
+  <div id="error-box"></div>
+
+  <div id="result">
+    <div class="result-box">
+      <div class="result-title">✓ Share link ready</div>
+      <div class="url-row">
+        <div id="result-url"></div>
+        <button id="copy-btn" onclick="copyUrl()">Copy</button>
+      </div>
+      <div class="result-meta" id="result-meta"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+let selectedAlbumId = null;
+let selectedAlbumName = null;
+let days = 7;
+const DAYS_PRESETS = [1, 3, 7, 14, 30];
+
+// ── days stepper ──────────────────────────────────────────────────────────────
+function changeDays(dir) {
+  const idx = DAYS_PRESETS.indexOf(days);
+  const newIdx = Math.max(0, Math.min(DAYS_PRESETS.length - 1, idx + dir));
+  days = DAYS_PRESETS[newIdx];
+  document.getElementById('days-value').textContent = days + ' d';
+  document.getElementById('days-minus').disabled = newIdx === 0;
+  document.getElementById('days-plus').disabled = newIdx === DAYS_PRESETS.length - 1;
+}
+changeDays(0); // init button states
+
+// ── load albums ───────────────────────────────────────────────────────────────
+async function loadAlbums() {
+  let albums;
+  try {
+    const r = await fetch('/api/albums');
+    if (!r.ok) throw new Error(await r.text());
+    albums = await r.json();
+  } catch (e) {
+    document.getElementById('album-grid').innerHTML =
+      `<div style="grid-column:1/-1;color:var(--danger);font-size:.85rem;padding:.5rem 0">
+        Failed to load albums: ${e.message}
+      </div>`;
+    return;
+  }
+
+  const grid = document.getElementById('album-grid');
+  if (!albums.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;color:var(--muted);font-size:.85rem">No albums found.</div>';
+    return;
+  }
+
+  grid.innerHTML = albums.map(a => `
+    <div class="album-card" data-id="${a.id}" data-name="${escHtml(a.name)}" onclick="selectAlbum(this)">
+      ${a.thumbUrl
+        ? `<img class="album-thumb" src="/api/proxy-thumb?url=${encodeURIComponent(a.thumbUrl)}" alt="" loading="lazy">`
+        : `<div class="album-thumb-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="3"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="m21 15-5-5L5 21"/>
+            </svg>
+           </div>`}
+      <div class="album-info">
+        <div class="album-name">${escHtml(a.name)}</div>
+        <div class="album-count">${a.assetCount} photo${a.assetCount !== 1 ? 's' : ''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function selectAlbum(card) {
+  document.querySelectorAll('.album-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedAlbumId = card.dataset.id;
+  selectedAlbumName = card.dataset.name;
+  const btn = document.getElementById('publish-btn');
+  btn.disabled = false;
+  btn.textContent = `Publish "${selectedAlbumName}"`;
+  hideAll();
+}
+
+// ── publish ───────────────────────────────────────────────────────────────────
+async function publish() {
+  if (!selectedAlbumId) return;
+  hideAll();
+
+  const btn = document.getElementById('publish-btn');
+  btn.disabled = true;
+  btn.textContent = 'Publishing…';
+
+  const prog = document.getElementById('progress');
+  const progLabel = document.getElementById('progress-label');
+  const progBar = document.getElementById('progress-bar');
+  prog.style.display = 'block';
+  progLabel.textContent = 'Downloading previews from Immich…';
+  progBar.style.width = '15%';
+
+  // Fake progress animation while waiting (server-side is sync)
+  const progInterval = setInterval(() => {
+    const cur = parseFloat(progBar.style.width);
+    if (cur < 85) {
+      progBar.style.width = (cur + (85 - cur) * 0.05) + '%';
+      if (cur > 40) progLabel.textContent = 'Uploading to Backblaze B2…';
+      if (cur > 70) progLabel.textContent = 'Generating share link…';
+    }
+  }, 400);
+
+  try {
+    const r = await fetch('/api/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ albumId: selectedAlbumId, days }),
+    });
+    clearInterval(progInterval);
+
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({ detail: r.statusText }));
+      throw new Error(err.detail || r.statusText);
+    }
+
+    const { url } = await r.json();
+    progBar.style.width = '100%';
+    progLabel.textContent = 'Done!';
+
+    setTimeout(() => {
+      prog.style.display = 'none';
+      showResult(url);
+    }, 500);
+
+  } catch (e) {
+    clearInterval(progInterval);
+    prog.style.display = 'none';
+    const eb = document.getElementById('error-box');
+    eb.textContent = 'Error: ' + e.message;
+    eb.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = `Publish "${selectedAlbumName}"`;
+  }
+}
+
+function showResult(url) {
+  const expireDate = new Date(Date.now() + days * 86400000);
+  const fmt = expireDate.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
+  document.getElementById('result-url').textContent = url;
+  document.getElementById('result-meta').textContent =
+    `"${selectedAlbumName}" · expires ${fmt} (${days} day${days > 1 ? 's' : ''})`;
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function copyUrl() {
+  const url = document.getElementById('result-url').textContent;
+  const btn = document.getElementById('copy-btn');
+  try {
+    await navigator.clipboard.writeText(url);
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  } catch {
+    // fallback: select text
+    const el = document.getElementById('result-url');
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+  }
+}
+
+function hideAll() {
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('error-box').style.display = 'none';
+  document.getElementById('progress').style.display = 'none';
+}
+
+loadAlbums();
+</script>
+</body>
+</html>

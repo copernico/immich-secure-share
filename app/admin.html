@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin · immich-share</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0d0d0f;
+  --surface:   #17171a;
+  --surface2:  #1f1f24;
+  --border:    #2a2a30;
+  --accent:    #e8ff6e;
+  --accent-dk: #b8cc48;
+  --text:      #f0f0f2;
+  --muted:     #6b6b78;
+  --danger:    #ff6b6b;
+  --danger-bg: rgba(255,107,107,.08);
+  --danger-border: rgba(255,107,107,.25);
+  --radius:    12px;
+  --font:      'DM Sans', system-ui, sans-serif;
+  --mono:      'DM Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  min-height: 100dvh;
+  padding-bottom: 3rem;
+}
+
+header {
+  padding: 1.4rem 1.2rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.header-left { display: flex; align-items: center; gap: .75rem; }
+.logo {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.logo svg { width: 18px; height: 18px; }
+header h1 { font-size: 1rem; font-weight: 600; letter-spacing: -.01em; }
+header span { font-size: .75rem; color: var(--muted); font-weight: 400; }
+.back-link {
+  font-size: .8rem;
+  color: var(--muted);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  transition: color .15s;
+}
+.back-link:hover { color: var(--text); }
+
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1.4rem 1.2rem;
+}
+
+.toolbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+.label {
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+#share-count {
+  font-size: .75rem;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+#cleanup-btn {
+  padding: .38rem .75rem;
+  border-radius: 8px;
+  border: 1px solid var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-family: var(--font);
+  font-size: .78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .1s, opacity .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  white-space: nowrap;
+}
+#cleanup-btn:hover { background: rgba(255,107,107,.16); }
+#cleanup-btn:disabled { opacity: .4; cursor: not-allowed; }
+#cleanup-btn svg { width: 13px; height: 13px; }
+
+/* ── shares list ── */
+#shares-list { display: flex; flex-direction: column; gap: 8px; }
+
+.share-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .9rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.share-card.inactive { opacity: .5; }
+
+.share-info { flex: 1; min-width: 0; }
+.share-name {
+  font-size: .9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.share-meta {
+  font-size: .75rem;
+  color: var(--muted);
+  margin-top: .2rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+.share-meta .sep { color: var(--border); }
+
+.badge {
+  font-size: .65rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: .15rem .45rem;
+  border-radius: 4px;
+}
+.badge-live    { background: rgba(232,255,110,.15); color: var(--accent); }
+.badge-expired { background: rgba(255,107,107,.12); color: var(--danger); }
+.badge-revoked { background: rgba(107,107,120,.15); color: var(--muted); }
+
+.share-actions { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+.btn {
+  padding: .4rem .7rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: .78rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .1s, opacity .15s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}
+.btn:hover { background: var(--border); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+.btn-danger {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.btn-danger:hover { background: rgba(255,107,107,.16); }
+
+/* ── renew popover ── */
+.renew-wrap { position: relative; display: inline-flex; }
+.renew-popover {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .75rem;
+  gap: .5rem;
+  align-items: center;
+  z-index: 10;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+}
+.renew-popover.open { display: flex; }
+.renew-popover label { font-size: .78rem; color: var(--muted); }
+.days-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: .82rem;
+  padding: .3rem .5rem;
+  cursor: pointer;
+}
+.btn-renew-confirm {
+  padding: .35rem .65rem;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent);
+  color: #0d0d0f;
+  font-family: var(--font);
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .1s;
+}
+.btn-renew-confirm:hover { background: var(--accent-dk); }
+
+/* ── empty / error / loading ── */
+.state-msg {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--muted);
+  font-size: .88rem;
+}
+.state-msg.error { color: var(--danger); }
+
+/* ── toast ── */
+#toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(2rem);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .6rem 1rem;
+  font-size: .82rem;
+  color: var(--text);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s, transform .2s;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">
+      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="7" height="7" rx="1.5" fill="#0d0d0f"/>
+        <rect x="11" y="2" width="7" height="7" rx="1.5" fill="#0d0d0f"/>
+        <rect x="2" y="11" width="7" height="7" rx="1.5" fill="#0d0d0f"/>
+        <circle cx="14.5" cy="14.5" r="3.5" fill="#0d0d0f"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Admin <span>· immich-share</span></h1>
+    </div>
+  </div>
+  <a class="back-link" href="/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+      <path d="M19 12H5M12 5l-7 7 7 7"/>
+    </svg>
+    New share
+  </a>
+</header>
+
+<main>
+  <div class="toolbar">
+    <div>
+      <div class="label">Shares</div>
+      <div id="share-count" style="margin-top:.3rem"></div>
+    </div>
+    <button id="cleanup-btn" onclick="cleanup()" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        <path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+      </svg>
+      Clean up expired &amp; revoked
+    </button>
+  </div>
+  <div id="shares-list">
+    <div class="state-msg">Loading…</div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+let shares = [];
+
+async function load() {
+  try {
+    const r = await fetch('/api/shares');
+    if (!r.ok) throw new Error(await r.text());
+    shares = await r.json();
+    render();
+  } catch (e) {
+    document.getElementById('shares-list').innerHTML =
+      `<div class="state-msg error">Failed to load shares: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function render() {
+  const list = document.getElementById('shares-list');
+  const count = document.getElementById('share-count');
+  const live = shares.filter(s => !s.expired && !s.revoked).length;
+  const inactive = shares.length - live;
+  count.textContent = `${live} live · ${inactive} inactive`;
+
+  const cleanupBtn = document.getElementById('cleanup-btn');
+  cleanupBtn.style.display = inactive > 0 ? 'inline-flex' : 'none';
+
+  if (!shares.length) {
+    list.innerHTML = '<div class="state-msg">No shares yet.</div>';
+    return;
+  }
+
+  list.innerHTML = shares.map(s => {
+    const expiresDate = new Date(s.expires_at);
+    const createdDate = new Date(s.created_at);
+    const fmt = d => d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const isInactive = s.expired || s.revoked;
+
+    let badge, statusText;
+    if (s.revoked) {
+      badge = '<span class="badge badge-revoked">Revoked</span>';
+      statusText = `Revoked ${fmt(new Date(s.revoked_at))}`;
+    } else if (s.expired) {
+      badge = '<span class="badge badge-expired">Expired</span>';
+      statusText = `Expired ${fmt(expiresDate)}`;
+    } else {
+      badge = '<span class="badge badge-live">Live</span>';
+      statusText = `Expires ${fmt(expiresDate)}`;
+    }
+
+    const openBtn = `
+      <a class="btn" href="${escHtml(s.url)}" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        Open
+      </a>`;
+
+    const renewBtn = !s.revoked ? `
+      <div class="renew-wrap" id="renew-wrap-${s.id}">
+        <button class="btn" onclick="toggleRenew('${s.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          Renew
+        </button>
+        <div class="renew-popover" id="renew-pop-${s.id}">
+          <label>Extend by</label>
+          <select class="days-select" id="renew-days-${s.id}">
+            <option value="1">1 day</option>
+            <option value="3">3 days</option>
+            <option value="7" selected>7 days</option>
+            <option value="14">14 days</option>
+            <option value="30">30 days</option>
+          </select>
+          <button class="btn-renew-confirm" onclick="confirmRenew('${s.id}')">Confirm</button>
+        </div>
+      </div>` : '';
+
+    const revokeBtn = !s.revoked ? `
+      <button class="btn btn-danger" id="del-${s.id}" onclick="revokeShare('${s.id}', '${escHtml(s.album_name).replace(/'/g,"\\'")}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        Revoke
+      </button>` : '';
+
+    return `
+      <div class="share-card${isInactive ? ' inactive' : ''}" id="card-${s.id}">
+        <div class="share-info">
+          <div class="share-name">${escHtml(s.album_name)}</div>
+          <div class="share-meta">
+            ${badge}
+            <span class="sep">·</span>
+            <span>${s.photo_count} photo${s.photo_count !== 1 ? 's' : ''}</span>
+            <span class="sep">·</span>
+            <span>Created ${fmt(createdDate)}</span>
+            <span class="sep">·</span>
+            <span>${statusText}</span>
+          </div>
+        </div>
+        <div class="share-actions">
+          ${openBtn}
+          ${renewBtn}
+          ${revokeBtn}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleRenew(id) {
+  // close all others first
+  document.querySelectorAll('.renew-popover').forEach(p => {
+    if (p.id !== `renew-pop-${id}`) p.classList.remove('open');
+  });
+  document.getElementById(`renew-pop-${id}`).classList.toggle('open');
+}
+
+// close popovers when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.renew-wrap')) {
+    document.querySelectorAll('.renew-popover').forEach(p => p.classList.remove('open'));
+  }
+});
+
+async function confirmRenew(id) {
+  const days = parseInt(document.getElementById(`renew-days-${id}`).value, 10);
+  document.getElementById(`renew-pop-${id}`).classList.remove('open');
+
+  const wrapBtn = document.querySelector(`#renew-wrap-${id} .btn`);
+  wrapBtn.disabled = true;
+  wrapBtn.textContent = 'Renewing…';
+
+  try {
+    const r = await fetch(`/api/shares/${id}/renew`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days }),
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({ detail: r.statusText }));
+      throw new Error(err.detail || r.statusText);
+    }
+    const { id: newId, url } = await r.json();
+    // update local state
+    const s = shares.find(s => s.id === id);
+    if (s) {
+      const newExpiry = new Date(Date.now() + days * 86400000);
+      s.id = newId;
+      s.expires_at = newExpiry.toISOString();
+      s.expired = false;
+      s.revoked = false;
+      s.revoked_at = null;
+      s.url = url;
+    }
+    render();
+    toast(`Renewed for ${days} day${days > 1 ? 's' : ''}`);
+  } catch (e) {
+    wrapBtn.disabled = false;
+    wrapBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Renew`;
+    toast('Error: ' + e.message, true);
+  }
+}
+
+async function revokeShare(id, name) {
+  if (!confirm(`Revoke share for "${name}"?\n\nFiles will be deleted from B2 immediately and the link will stop working.`)) return;
+
+  const btn = document.getElementById(`del-${id}`);
+  btn.disabled = true;
+  btn.textContent = 'Revoking…';
+
+  try {
+    const r = await fetch(`/api/shares/${id}`, { method: 'DELETE' });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({ detail: r.statusText }));
+      throw new Error(err.detail || r.statusText);
+    }
+    const s = shares.find(s => s.id === id);
+    if (s) { s.revoked = true; s.revoked_at = new Date().toISOString(); }
+    render();
+    toast('Share revoked');
+  } catch (e) {
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Revoke`;
+    toast('Error: ' + e.message, true);
+  }
+}
+
+async function cleanup() {
+  const inactive = shares.filter(s => s.expired || s.revoked).length;
+  if (!confirm(`Delete ${inactive} expired/revoked share${inactive !== 1 ? 's' : ''} from B2 and remove from history?`)) return;
+
+  const btn = document.getElementById('cleanup-btn');
+  btn.disabled = true;
+  btn.textContent = 'Cleaning up…';
+
+  try {
+    const r = await fetch('/api/shares', { method: 'DELETE' });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({ detail: r.statusText }));
+      throw new Error(err.detail || r.statusText);
+    }
+    shares = shares.filter(s => !s.expired && !s.revoked);
+    render();
+    toast('Cleaned up');
+  } catch (e) {
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Clean up expired & revoked`;
+    toast('Error: ' + e.message, true);
+  }
+}
+
+function toast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.borderColor = isError ? 'var(--danger-border)' : 'var(--border)';
+  el.style.color = isError ? 'var(--danger)' : 'var(--text)';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+load();
+</script>
+</body>
+</html>
