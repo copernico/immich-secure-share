@@ -552,21 +552,54 @@ function showResult(url) {
   document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-async function copyUrl() {
+function copyUrl() {
   const url = document.getElementById('result-url').textContent;
   const btn = document.getElementById('copy-btn');
+
+  // For HTTP (non-secure context), use execCommand directly
+  // Modern clipboard API requires HTTPS
   try {
-    await navigator.clipboard.writeText(url);
-    btn.textContent = 'Copied!';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-  } catch {
-    // fallback: select text
+    const textarea = document.createElement('textarea');
+    textarea.value = url;
+    // Make it invisible but accessible
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-999999px';
+    textarea.style.top = '-999999px';
+    textarea.setAttribute('readonly', '');
+    document.body.appendChild(textarea);
+
+    // iOS Safari requires different selection method
+    if (navigator.userAgent.match(/ipad|iphone/i)) {
+      const range = document.createRange();
+      range.selectNodeContents(textarea);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      textarea.setSelectionRange(0, textarea.value.length);
+    } else {
+      textarea.select();
+    }
+
+    const success = document.execCommand('copy');
+    document.body.removeChild(textarea);
+
+    if (success) {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    } else {
+      throw new Error('execCommand returned false');
+    }
+  } catch (err) {
+    console.error('Copy failed:', err);
+    // Last resort: select the visible text for manual copy
     const el = document.getElementById('result-url');
     const range = document.createRange();
     range.selectNodeContents(el);
     window.getSelection().removeAllRanges();
     window.getSelection().addRange(range);
+    btn.textContent = 'Selected - Press Ctrl+C';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 3000);
   }
 }
 
