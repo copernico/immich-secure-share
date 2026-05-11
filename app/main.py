@@ -32,6 +32,7 @@ B2_ENDPOINT    = os.environ["B2_ENDPOINT"]
 B2_KEY_ID      = os.environ["B2_KEY_ID"]
 B2_APP_KEY     = os.environ["B2_APP_KEY"]
 B2_BUCKET      = os.environ["B2_BUCKET"]
+CLOUDFLARE_DOMAIN = os.environ.get("CLOUDFLARE_DOMAIN", "").rstrip("/")
 
 DB_PATH = os.environ.get("DB_PATH", "/data/shares.db")
 
@@ -94,11 +95,18 @@ def upload_bytes(s3, key: str, data: bytes, content_type: str):
     s3.put_object(Bucket=B2_BUCKET, Key=key, Body=data, ContentType=content_type)
 
 def presign(s3, key: str, expires_in: int) -> str:
-    return s3.generate_presigned_url(
+    url = s3.generate_presigned_url(
         "get_object",
         Params={"Bucket": B2_BUCKET, "Key": key},
         ExpiresIn=expires_in,
     )
+    # Replace B2 domain with CloudFlare domain if configured
+    if CLOUDFLARE_DOMAIN:
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        b2_domain = f"{parsed.scheme}://{parsed.netloc}"
+        url = url.replace(b2_domain, CLOUDFLARE_DOMAIN, 1)
+    return url
 
 # ── B2 NATIVE API (permanent deletion) ───────────────────────────────────────
 

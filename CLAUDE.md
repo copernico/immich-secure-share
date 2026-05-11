@@ -66,6 +66,7 @@ Copy `.env.example` to `.env` and configure:
 - `B2_ENDPOINT`: Backblaze B2 S3-compatible endpoint (e.g., `https://s3.us-west-004.backblazeb2.com`)
 - `B2_KEY_ID`, `B2_APP_KEY`: B2 application key with read/write access
 - `B2_BUCKET`: Private B2 bucket name
+- `CLOUDFLARE_DOMAIN` (optional): CloudFlare Workers domain to replace B2 domain in presigned URLs (e.g., `https://immich.antonino-sabetta.workers.dev`). Leave blank to use B2 domain directly.
 
 ### Testing the app
 
@@ -92,6 +93,9 @@ Mixing `httpx.Client` (sync) and `boto3` (sync) with `fastapi` (async). Running 
 
 **Why proxy `/api/proxy-thumb`?**  
 Immich API key must never reach the browser. Backend proxies thumbnails with key in header, frontend gets plain image bytes.
+
+**Why CloudFlare Workers domain?**  
+When configured, presigned B2 URLs are rewritten to use a CloudFlare Workers domain (via `CLOUDFLARE_DOMAIN` env var). This allows using CloudFlare's global CDN for faster delivery and optional caching, while keeping B2 as the origin storage.
 
 ## Dependencies
 
